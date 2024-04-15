@@ -3,8 +3,6 @@ name: Build app - recipe environment
 
 on:
   pull_request:
-    branches:
-      - "${{ github.head_ref }}"
   workflow_dispatch:
 
 concurrency:
