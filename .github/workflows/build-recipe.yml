@@ -21,6 +21,7 @@ jobs:
           
           if echo "$REVIEWERS" | jq '.[] | select(.state == "APPROVED")' > /dev/null; then
             echo "The pull request has been approved."
+            echo "${{ secrets.GITHUB_TOKEN }}"
           else
             echo "The pull request was not approved."
             exit 1
