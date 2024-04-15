@@ -1,22 +1,18 @@
-# Petit Résumé des actions GitHub que j'ai pu connaitre
-
 ## Environnement de recette pour la construction d'application
 
 ### Déclencheurs d'exécution :
 
-- Pull Request
-- Déclenchement manuel
+Les actions sont déclenchées à chaque Pull Request ou peuvent être déclenchées manuellement via un déclenchement workflow_dispatch.
 
 ### Gestion de la concurrence :
 
-- Groupe de concurrence : ${{ github.workflow }}-${{ github.ref }}
-- Annulation en cours : activée
+Pour garantir une exécution fluide et éviter les conflits, les actions sont regroupées en fonction du nom du workflow et de la référence Git. De plus, elles ont la capacité d'annuler les actions en cours si nécessaire pour maintenir la cohérence.
 
 ### Jobs :
 
 #### Test :
 
-- Système d'exploitation : Ubuntu (dernière version)
+Ce job vérifie si la Pull Request a été approuvée par un ou plusieurs examinateurs. Si elle est approuvée, le processus continue ; sinon, il échoue avec un message approprié. Ensuite, il procède à la récupération du code à partir du référentiel, à la configuration de l'environnement Java nécessaire et à la construction de l'APK de test en mode débogage.
 
 ```yaml
 jobs:
@@ -50,8 +46,7 @@ jobs:
 
 #### Construction :
 
-- Besoin du job "Test"
-- Système d'exploitation : Ubuntu (dernière version)
+Ce job dépend du job "Test" pour s'assurer que les tests ont réussi. Il procède ensuite à la récupération du code, à la configuration de l'environnement Java et à la construction du fichier APK final.
 
 ```yaml
 jobs:
