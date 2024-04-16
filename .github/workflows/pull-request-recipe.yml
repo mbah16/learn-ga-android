@@ -1,0 +1,67 @@
+name: Pull request - recipe
+
+on:
+  pull_request:
+    branches: [ '**' ]
+  workflow_dispatch:
+
+concurrency:
+  group: pr-test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4
+
+      - name: Verify approval
+        # utiliser github cli a la place
+        run: |
+          PR_NUMBER=$(echo "${{ github.event.pull_request.url }}" | awk -F'/' '{print $NF}')
+          REVIEWERS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/${{ github.repository }}/pulls/${PR_NUMBER}/reviews")
+          
+          if echo "$REVIEWERS" | jq '.[] | select(.state == "APPROVED")' > /dev/null; then
+            echo "The pull request has been approved."
+            echo "${{ secrets.GITHUB_TOKEN }}"
+          else
+            echo "The pull request was not approved."
+            exit 1
+          fi
+
+#      - name: "check approval"
+#        run: |
+#          if git log --pretty=%B -n 1 $GITHUB_SHA | grep -qi "Approved"; then
+#            echo "La demande d'extraction a été approuvée."
+#          else
+#            echo "La demande d'extraction n'a pas été approuvée."
+#            # exit 1
+#          fi
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'corretto'
+          java-version: '21'
+
+      - name: Setup Android SDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'corretto'
+          java-version: '21'
+
+      - name: Build the Android application
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Run Android unit tests
+        run: |
+          ./gradlew testDebugUnitTest
+
+      - name: Place the APK in a folder
+        run: |
+          mkdir artifacts
+          cp app/build/outputs/apk/debug/app-debug.apk artifacts/
+          ls artifacts/
