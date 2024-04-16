@@ -1,0 +1,55 @@
+name: Build app - recipe environment
+
+on:
+  pull_request:
+    branches:
+      - $default-branch
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify approval
+        run: |
+          PR_NUMBER=$(echo "${{ github.event.pull_request.url }}" | awk -F'/' '{print $NF}')
+          REVIEWERS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/${{ github.repository }}/pulls/${PR_NUMBER}/reviews")
+          
+          if echo "$REVIEWERS" | jq '.[] | select(.state == "APPROVED")' > /dev/null; then
+            echo "The pull request has been approved."
+            echo "${{ secrets.GITHUB_TOKEN }}"
+          else
+            echo "The pull request was not approved."
+            exit 1
+          fi
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        name: Setup Java 21
+        with:
+          distribution: 'corretto'
+          java-version: '21'
+
+      - name: Build test apk mode debug
+        run: bash ./gradlew test
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        name: Setup Java 21
+        with:
+          distribution: 'corretto'
+          java-version: '21'
+
+      - name: Build apk file
+        run: bash ./gradlew build
