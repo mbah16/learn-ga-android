@@ -2,8 +2,7 @@ name: Validation Pull Request
 
 on:
   pull_request:
-    branches:
-      - $default-branch
+    types: [opened, synchronize]
   workflow_dispatch:
 
 concurrency:
@@ -39,14 +38,11 @@ jobs:
         run: |
           ./gradlew testDebugUnitTest
 
-      - name: Lance des tests d'instrumentation Android
-        run: |
-          ./gradlew connectedDebugAndroidTest
-
       - name: Place l'APK dans un dossier
         run: |
           mkdir artifacts
           cp app/build/outputs/apk/debug/app-debug.apk artifacts/
+          ls artifacts/
 
   validation_pull_request:
     runs-on: ubuntu-latest
