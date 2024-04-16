@@ -1,0 +1,49 @@
+name: Daily Build and Test
+
+on:
+  schedule:
+    - cron: '* * * * *' # Tous les jours à midi
+  workflow_dispatch: # Pour lancer manuellement
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Verify if code has been pushed in the last 24 hours
+        id: check-commits
+        run: |
+          if git log --since=24 hours ago | grep .; then
+            echo 'Code has been pushed in the last 24 hours.'
+          else
+            echo 'No code has been pushed in the last 24 hours. Cancelling workflow.'
+            exit 1
+          fi
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'corretto'
+          java-version: '21'
+
+      - name: Build with Gradle
+        run: ./gradlew build
+
+      - name: Rename and package APK
+        run: |
+          COMMIT_SHA=$(git rev-parse --short HEAD)
+          APK_FILE=$(find . -name "*.apk")
+          mv $APK_FILE "APP_${COMMIT_SHA}.apk"
+          
+          # Package your APK as an artifact
+          mkdir -p artifacts
+          mv "APP_${COMMIT_SHA}.apk" artifacts/
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: your-app-artifact
+          path: artifacts/
