@@ -1,0 +1,77 @@
+name: Develop schedule
+
+on:
+  schedule:
+    - cron: '00 12 * * *'
+  workflow_dispatch:
+    inputs:
+      branch:
+        type: choice
+        description: 'Repository branch used'
+        options:
+          - develop
+          - main
+        default: develop
+
+jobs:
+  Checking:
+    runs-on: ubuntu-latest
+    steps:
+      # checkout code
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
+
+      # Print latest commit
+      - name: print latest_commit
+        run: echo ${{ github.sha }}
+
+      # Check latest commit
+      - id: should_run
+        if: ${{ github.event_name == 'schedule' }}
+        continue-on-error: true
+        name: check latest commit is less than 24 hours
+        run: |
+          lastCommits=($(git rev-list  --after="24 hours" ${{ github.sha }}))
+          echo "value=$(test -z ${lastCommits} && echo false || echo true)" >> $GITHUB_OUTPUT
+
+      # Auto Cancel verification
+      - name: Auto-cancel
+        if: ${{ github.event_name != 'workflow_dispatch' }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          if [[ ${{ steps.should_run.outputs.value }} == "false" && ${{ steps.previous_workflow_status.outputs.value }} != "failed" ]]; then
+            cd ${{ github.workspace }}
+            gh run cancel ${{ github.run_id }}
+          fi
+          exit 0
+
+      - name: Rename and package APK
+        run: |
+          COMMIT_SHA=$(git rev-parse --short HEAD)
+          APK_FILE=$(find . -name "*.apk")
+          # mv "$APK_FILE" ${COMMIT_SHA}.apk
+          
+          # Package your APK as an artifact
+          mkdir -p artifacts
+          # mv ${COMMIT_SHA}.apk artifacts/
+
+      # Upload artifact
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: your-app-artifact
+          path: artifacts/
+
+  Test:
+    name: Run unit test
+    uses: ./.github/workflows/wc_test.yml
+    needs:
+      - Checking
+
+  Build:
+    name: Build Android App
+    uses: ./.github/workflows/wc_build.yml
+    needs:
+      - Checking

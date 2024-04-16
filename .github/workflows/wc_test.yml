@@ -1,0 +1,50 @@
+name: wc test
+
+on:
+  workflow_call:
+
+concurrency:
+  group: pr-test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  Test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4
+
+      # Verify approval
+      - name: check approval
+        run: |
+          if git log --pretty=%B -n 1 $GITHUB_SHA | grep -qi "Approved"; then
+            echo "The pull request has been approved."
+          else
+            echo "The pull request was not approved."
+            # exit 1
+          fi
+
+      - name: Setup Android SDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'corretto'
+          java-version: '21'
+
+      - name: Run Android tests
+        run: |
+          chmod +x gradlew
+          ./gradlew test
+
+      - name: Run Android unit tests
+        run: |
+          ./gradlew testDebugUnitTest
+
+      - name: Build the Android application
+        run: |
+          ./gradlew assembleDebug
+
+      - name: Place the APK in a folder
+        run: |
+          mkdir artifacts
+          cp app/build/outputs/apk/debug/app-debug.apk artifacts/
+          ls artifacts/
