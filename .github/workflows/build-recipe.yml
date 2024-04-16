@@ -1,14 +1,14 @@
 name: Build app - recipe environment
 
-
 on:
   pull_request:
+    branches:
+      - $default-branch
   workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
-
 
 jobs:
   test:
