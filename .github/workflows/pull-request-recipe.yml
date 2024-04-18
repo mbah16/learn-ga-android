@@ -3,7 +3,6 @@ name: Pull request - recipe
 on:
   pull_request:
     branches: [ '**' ]
-  workflow_dispatch:
 
 concurrency:
   group: pr-test-${{ github.ref }}
