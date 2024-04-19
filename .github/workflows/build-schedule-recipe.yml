@@ -1,0 +1,72 @@
+name: Build schedule - recipe
+
+on:
+  schedule:
+    - cron: '1 * * * *'
+  workflow_dispatch:
+    inputs:
+      branch:
+        type: choice
+        description: 'Repository branch used'
+        options:
+          - develop
+          - main
+
+jobs:
+  Checking:
+    runs-on: ubuntu-latest
+    name: Check latest commit
+    outputs:
+      should_run: ${{ steps.should_run.outputs.value }}
+      previous_workflow_status: ${{ steps.previous_workflow_status.outputs.value }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
+
+      - name: print latest_commit
+        run: echo ${{ github.sha }}
+
+      - id: should_run
+        if: ${{ github.event_name == 'schedule' }}
+        continue-on-error: true
+        name: check latest commit is less than 2 hours
+        run: |
+          lastCommits=($(git rev-list  --after="2 hours" ${{ github.sha }}))
+          echo "value=$(test -z ${lastCommits} && echo false || echo true)" >> $GITHUB_OUTPUT
+
+      - name: show result git rev-list
+        run: echo ${{ steps.should_run.outputs.value }}
+
+      - name: Check previous workflow failed status
+        id: previous_workflow_status
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          echo "value=$(gh run list --workflow develop-schedule.yml | grep -oh "completed.*" | head -1 | awk '{print $2}')" >> $GITHUB_OUTPUT
+
+      - name: Auto-cancel
+        if: ${{ github.event_name != 'workflow_dispatch' }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          if [[ ${{ steps.should_run.outputs.value }} == "false" && ${{ steps.previous_workflow_status.outputs.value }} != "failed" ]]; then
+            cd ${{ github.workspace }}
+            gh run cancel ${{ github.run_id }}
+          fi
+          exit 0
+
+#  Test:
+#    uses: ./.github/workflows/wc_test.yml
+#    needs:
+#      - Checking
+#    secrets: inherit
+#
+#  Build:
+#    if: ${{ (needs.Checking.outputs.should_run != 'false' || github.event_name == 'workflow_dispatch') }}
+#    uses: ./.github/workflows/wc_build.yml
+#    needs:
+#      - Checking
+#    with:
+#      environment: 'DEV'
+#    secrets: inherit

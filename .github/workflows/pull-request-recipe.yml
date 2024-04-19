@@ -1,8 +1,9 @@
-name: Build app - recipe environment
+name: Pull request - recipe
 
 on:
   pull_request:
     branches: [ '**' ]
+  workflow_dispatch:
 
 concurrency:
   group: pr-test-${{ github.ref }}
@@ -12,13 +13,16 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4
+
       - name: Verify approval
         # utiliser github cli a la place
-
         run: |
           PR_NUMBER=$(echo "${{ github.event.pull_request.url }}" | awk -F'/' '{print $NF}')
           REVIEWERS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/${{ github.repository }}/pulls/${PR_NUMBER}/reviews")
           
+          echo "github.event_name ${{ github.event_name }}"
           if echo "$REVIEWERS" | jq '.[] | select(.state == "APPROVED")' > /dev/null; then
             echo "The pull request has been approved."
             echo "${{ secrets.GITHUB_TOKEN }}"
@@ -27,8 +31,14 @@ jobs:
             exit 1
           fi
 
-      - name: Checkout the code
-        uses: actions/checkout@v4
+      - name: "check approval"
+        run: |
+          if git log --pretty=%B -n 1 $GITHUB_SHA | grep -qi "Approved"; then
+            echo "La demande d'extraction a été approuvée."
+          else
+            echo "La demande d'extraction n'a pas été approuvée."
+#            exit 1
+          fi
 
       - name: Setup JDK
         uses: actions/setup-java@v4

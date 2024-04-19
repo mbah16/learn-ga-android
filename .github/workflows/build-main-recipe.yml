@@ -2,7 +2,8 @@ name: Build main - recipe
 
 on:
   pull_request:
-    branches: main
+    branches: [ 'main' ]
+  workflow_dispatch:
 
 concurrency:
   group: pr-main-${{ github.ref }}
