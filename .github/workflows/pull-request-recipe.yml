@@ -3,6 +3,7 @@ name: Pull request - recipe
 on:
   pull_request:
     branches: [ '**' ]
+  workflow_dispatch:
 
 concurrency:
   group: pr-test-${{ github.ref }}
@@ -21,6 +22,7 @@ jobs:
           PR_NUMBER=$(echo "${{ github.event.pull_request.url }}" | awk -F'/' '{print $NF}')
           REVIEWERS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/${{ github.repository }}/pulls/${PR_NUMBER}/reviews")
           
+          echo "github.event_name ${{ github.event_name }}"
           if echo "$REVIEWERS" | jq '.[] | select(.state == "APPROVED")' > /dev/null; then
             echo "The pull request has been approved."
             echo "${{ secrets.GITHUB_TOKEN }}"
