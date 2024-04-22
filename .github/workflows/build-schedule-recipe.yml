@@ -6,11 +6,12 @@ on:
   workflow_dispatch:
     inputs:
       branch:
-        type: choice
-        description: 'Repository branch used'
-        options:
-          - develop
-          - main
+        #        type: choice
+        #        description: 'Repository branch used'
+        #        options:
+        #          - develop
+        #          - main
+        default: develop
 
 jobs:
   Checking:
@@ -19,6 +20,7 @@ jobs:
     outputs:
       should_run: ${{ steps.should_run.outputs.value }}
       previous_workflow_status: ${{ steps.previous_workflow_status.outputs.value }}
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -56,17 +58,19 @@ jobs:
           fi
           exit 0
 
-#  Test:
-#    uses: ./.github/workflows/wc_test.yml
-#    needs:
-#      - Checking
-#    secrets: inherit
-#
-#  Build:
-#    if: ${{ (needs.Checking.outputs.should_run != 'false' || github.event_name == 'workflow_dispatch') }}
-#    uses: ./.github/workflows/wc_build.yml
-#    needs:
-#      - Checking
-#    with:
-#      environment: 'DEV'
-#    secrets: inherit
+      - name: Rename and package APK
+        run: |
+          COMMIT_SHA=$(git rev-parse --short HEAD)
+          APK_FILE=$(find . -name "*.apk")
+          mv $APK_FILE "APP_${COMMIT_SHA}.apk"
+          
+          # Package your APK as an artifact
+          mkdir -p artifacts
+          mv "APP_${COMMIT_SHA}.apk" artifacts/
+          
+          # Upload artifact
+          - name: Upload Artifact
+            uses: actions/upload-artifact@v4
+            with:
+              name: your-app-artifact
+              path: artifacts/
