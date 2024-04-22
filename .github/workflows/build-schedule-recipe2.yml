@@ -41,9 +41,10 @@ jobs:
           # Package your APK as an artifact
           mkdir -p artifacts
           mv "APP_${COMMIT_SHA}.apk" artifacts/
-
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: your-app-artifact
-          path: artifacts/
+          
+          # Upload artifact
+          - name: Upload Artifact
+            uses: actions/upload-artifact@v4
+            with:
+              name: your-app-artifact
+              path: artifacts/
