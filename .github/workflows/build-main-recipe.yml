@@ -2,7 +2,7 @@ name: Build main - recipe
 
 on:
   pull_request:
-    branches: [ 'main' ]
+    branches: [ '**' ]
   workflow_dispatch:
 
 concurrency:
