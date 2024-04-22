@@ -1,0 +1,53 @@
+name: Demo schedule - recipe
+
+# Nommez votre workflow
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+    - if: $CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE == "web"
+
+stages:
+  - check_code_pushed
+  - run_tests
+  - build
+  - generate_artifact
+
+check_code_pushed:
+  stage: check_code_pushed
+  script:
+    - git fetch --depth=1 origin master
+    - LAST_COMMIT_DATE=$(git log -1 --format=%cd)
+    - if [ "$((($(date +%s) - $(date -d "$LAST_COMMIT_DATE" +%s)) / 3600))" -gt 24 ]; then exit 1; fi
+
+run_tests:
+  stage: run_tests
+  script:
+    - ./gradlew test
+
+build:
+  stage: build
+  script:
+    - ./gradlew assembleDebug
+
+generate_artifact:
+  stage: generate_artifact
+  script:
+    - COMMIT_SHA=$(git rev-parse --short HEAD)
+    - mv app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/app-debug-${COMMIT_SHA}.apk
+  artifacts:
+    paths:
+      - app/build/outputs/apk/debug/*.apk
+
+# Ajoutez votre schedule ici
+schedules:
+  - cron: "0 12 * * *"
+    # Configurez ici les branches sur lesquelles le schedule s'exécutera
+    branches:
+      - master
+    only:
+      - schedules
+
+# Configuration pour le déclenchement manuel
+manual_trigger:
+  stage: manual
+  when: manual
