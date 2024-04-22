@@ -2,7 +2,7 @@ name: Daily Build and Test
 
 on:
   schedule:
-    - cron: '0 12 * * *' # Tous les jours à midi
+    - cron: '1 * * * *' # Tous les jours à midi
   workflow_dispatch: # Pour lancer manuellement
 
 jobs:
