@@ -36,16 +36,16 @@ jobs:
           echo "value=$(test -z ${lastCommits} && echo false || echo true)" >> $GITHUB_OUTPUT
 
       # Auto Cancel verification
-      - name: Auto-cancel
-        if: ${{ github.event_name != 'workflow_dispatch' }}
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          if [[ ${{ steps.should_run.outputs.value }} == "false" && ${{ steps.previous_workflow_status.outputs.value }} != "failed" ]]; then
-            cd ${{ github.workspace }}
-            gh run cancel ${{ github.run_id }}
-          fi
-          exit 0
+#      - name: Auto-cancel
+#        if: ${{ github.event_name != 'workflow_dispatch' }}
+#        env:
+#          GITHUB_TOKEN: ${{ github.token }}
+#        run: |
+#          if [[ ${{ steps.should_run.outputs.value }} == "false" && ${{ steps.previous_workflow_status.outputs.value }} != "failed" ]]; then
+#            cd ${{ github.workspace }}
+#            gh run cancel ${{ github.run_id }}
+#          fi
+#          exit 0
 
       - name: Rename and package APK
         run: |
